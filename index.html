@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>myCalendar</title>
+
+    <!-- Loading Bootstrap -->
+    <link href="css/vendor/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Loading Flat UI Pro -->
+    <link href="css/flat-ui.css" rel="stylesheet">
+
+    <link rel="shortcut icon" href="dist/favicon.ico">
+    <style>
+        :root {
+            --blue: #6fade7;
+            --gray: #494949;
+            --white: #ddd;
+        }
+
+        ol,
+        ul,
+        li {
+            list-style: none;
+        }
+
+        .bg-blue {
+            background-color: var(--blue);
+        }
+
+        [v-cloak] {
+            display: none;
+        }
+
+        html {
+            text-align: center;
+            color: #494949;
+        }
+
+        .calendar {
+            margin: 30px 0;
+        }
+
+        .week {
+            border-right: 1px solid var(--white);
+        }
+
+        .weekDay,
+        .week {
+            display: flex;
+            border-bottom: 1px solid var(--white);
+        }
+
+        .weekDay>div {
+            flex: 1 1 0%;
+            line-height: 30px;
+        }
+
+        .week>div {
+            position: relative;
+            border-left: 1px solid var(--white);
+            flex: 1 1 0%;
+            height: 90px;
+            line-height: 30px;
+        }
+
+        /* .week>div::before {
+            content: attr(data-date);
+            position: absolute;
+            top: 0;
+            right: 0;
+            display: block;
+            width: 30px;
+            border-left: 1px solid var(--white);
+            border-bottom: 1px solid var(--white);
+        } */
+
+        .today::after {
+            content: '';
+            display: block;
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-radius: 100%;
+            background-color: var(--blue);
+            color: var(--white);
+            z-index: -1;
+            /* width: 100%; */
+        }
+
+        .other {
+            background-color: var(--gray);
+            color: var(--white);
+        }
+
+        .todos .done {
+            text-decoration: line-through;
+        }
+
+        .no-todo {
+            height: 80vh;
+            display: flex;
+            text-align: center;
+            align-items: center;
+            align-content: center;
+            justify-content: center;
+        }
+
+        .day {
+            display: flex;
+            text-align: center;
+            align-items: center;
+            align-content: center;
+            justify-content: center;
+        }
+
+        .day>div {
+            position: relative;
+        }
+
+        .day>div>div {
+            position: absolute;
+            top: -70%;
+            left: 70%;
+            z-index: 10;
+        }
+
+        /* .day > div ::after{
+            content: '';
+            display: block;
+            width: 20px;
+            height: 20px;
+            background-color: var(--blue);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%,-50%);
+        } */
+
+
+
+        /* .btn-group>.btn {
+            width: 24px;
+            height: 24px;
+        } */
+
+        /* .fui-arrow-left::before{
+            margin-right: 20px;
+        } */
+        /* .btn>div {
+        
+        } */
+    </style>
+</head>
+
+<body>
+    <div id="app" v-cloak class="container">
+        <div class="row">
+            <div class="col-8">
+                <h3 class="text-center">
+                    <span class="fui-calendar align-middle"></span>
+                    <button class="btn bg-blue" @click="setToday">回今日</button>
+                </h3>
+                <h4 class="text-center"></span>
+                    <span class="btn-group">
+                        <button class="btn rounded-circle align-middle" @click="adjustYear(-1)">
+                            <div class="fui-arrow-left"></div>
+                        </button>
+                        &nbsp; {{calendar.year}}&nbsp;
+                        <button class="btn rounded-circle align-middle" @click="adjustYear(1)">
+                            <div class="fui-arrow-right"></div>
+                        </button>
+                        &nbsp; -&nbsp;
+                        <button class="btn rounded-circle align-middle" @click="adjustMonth(-1)">
+                            <div class="fui-arrow-left"></div>
+                        </button>
+                        &nbsp; {{padLeft(calendar.month +1,2)}}&nbsp;
+                        <button class="btn rounded-circle align-middle" @click="adjustMonth(1)">
+                            <div class="fui-arrow-right"></div>
+                        </button>
+                    </span>
+                </h4>
+                <div class="d-flex justify-content-between">
+
+
+                </div>
+                <div class="calendar">
+                    <div class="weekDay bg-blue text-center">
+                        <div>日</div>
+                        <div>一</div>
+                        <div>二</div>
+                        <div>三</div>
+                        <div>四</div>
+                        <div>五</div>
+                        <div>六</div>
+                    </div>
+                    <div class="week" v-for="i in 6">
+                        <div class="day" v-for="j in 7" :data-date="calendarMonth[(i-1)*7+j-1].date" :class="{
+                        today:calendarMonth[(i-1)*7+j-1].year === today.year && calendarMonth[(i-1)*7+j-1].month === today.month && calendarMonth[(i-1)*7+j-1].date == today.date,
+                        other:calendarMonth[(i-1)*7+j-1].month !== calendar.month}"
+                            @dblclick="addTodo(calendarMonth[(i-1)*7+j-1])">
+                            <div class="">{{calendarMonth[(i-1)*7+j-1].date}}
+                                <div class="" v-if="calendarMonth[(i-1)*7+j-1].count">
+                                    <span class="badge badge-warning">{{calendarMonth[(i-1)*7+j-1].count}}</span>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="todos pt-5 ml-3">
+                    <!-- <h4 class="text-left pt-4">
+                        <span class="fui-list-bulleted"></span>
+                    </h4> -->
+                    <div v-if="currentMonth == 0">
+                        <div class="no-todo">
+                            <span class="fui-triangle-left-large"></span>
+                            <h4 class="border-right border-left">連點來紀錄事項！</h4>
+                        </div>
+                    </div>
+                    <div v-if="currentMonth.length > 0">
+                        <div v-for="item in currentMonth">
+                            {{item.month}}/{{item.date}}
+                            <ol v-for="(todo,index) in item.todos">
+                                <li style="border-bottom: 1px solid var(--blue);">
+                                    <label class="form-check-label"></label><input class="" type="checkbox" value=""
+                                        id="checkbox1" data-toggle="checkbox" v-model="todo.done">
+                                    <span :class="{done:todo.done}"
+                                        @dblclick="editTodo(todo)">&nbsp;{{todo.content}}&nbsp;&nbsp;
+
+                                    </span> <button class="badge badge-secondary float-right"
+                                        @click="deleteTodo(index,item)">刪除</button>
+                                    </label>
+                                </li>
+
+                                <!-- <span :class="{done:todo.done}" @dblclick="editTodo(todo)">{{todo.content}} </span>
+                                <button @click="deleteTodo(index,item)">刪除</button></li> -->
+                                </ul>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"
+        integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+
+    <!-- Bootstrap 4 requires Popper.js -->
+    <script src="https://unpkg.com/popper.js@1.14.1/dist/umd/popper.min.js" crossorigin="anonymous"></script>
+
+    <script src="http://vjs.zencdn.net/6.6.3/video.js"></script>
+
+    <script src="scripts/flat-ui.js"></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.10/vue.js'></script>
+    <script>
+        let app = new Vue({
+            el: "#app",
+            data: {
+                today: {
+                    year: 0,
+                    month: 0,
+                    date: 0,
+                    day: 0
+                },
+                calendar: {
+                    year: 0,
+                    month: 0,
+                    date: 0,
+                    day: 0
+                },
+                todos: {
+                }
+            },
+            mounted() {
+                this.setToday();
+                let ls = JSON.parse(window.localStorage.getItem('myTodos')) || {};
+                this.$set(this, 'todos', ls);
+                console.log(this.todos)
+            },
+            methods: {
+                deleteTodo(index, item) {
+                    if (window.confirm('確認刪除')) {
+                        item.todos.splice(index, 1);
+                        window.localStorage.setItem(
+                            'myTodos',
+                            JSON.stringify(this.todos)
+                        )
+                    }
+                },
+                editTodo(todo) {
+                    let content = window.prompt('請輸入修改內容', todo.content);
+                    if (content.trim()) {
+                        todo.content = content.trim();
+                        window.localStorage.setItem(
+                            'myTodos',
+                            JSON.stringify(this.todos)
+                        )
+                    }
+                },
+                addTodo({ year, month, date }) {
+                    let content = window.prompt('請輸入內容', '');
+
+                    if (content.trim()) {
+                        let y = this.todos[year] || {};
+                        let m = y[month] || {};
+                        let d = m[date] || [];
+                        d.push({
+                            content: content.trim(),
+                            done: false
+                        });
+                        this.$set(this.todos, year, y);
+                        this.$set(this.todos[year], month, m);
+                        this.$set(this.todos[year][month], date, d);
+                        window.localStorage.setItem(
+                            'myTodos',
+                            JSON.stringify(this.todos)
+                        )
+
+                        // this.todos[year] = y;
+                        // this.todos[year][month] = m;
+                        // this.todos[year][month][date] = d
+                    }
+                },
+                setToday() {
+                    const date = new Date()
+                    this.today.year = this.calendar.year = date.getFullYear()
+                    this.today.month = this.calendar.month = date.getMonth()
+                    this.today.date = this.calendar.date = date.getDate()
+                    this.today.day = this.calendar.day = date.getDay()
+                },
+                adjustYear(fix) {
+                    this.calendar.year += fix
+                },
+                adjustMonth(fix) {
+                    let month = this.calendar.month + fix
+                    if (month > 11) {
+                        this.adjustYear(1);
+                        this.calendar.month = 0;
+                    } else if (month < 0) {
+                        this.adjustYear(-1);
+                        this.calendar.month = 11;
+                    } else {
+                        this.calendar.month = month
+                    }
+                },
+                getTodos({ year, month, date }) {
+                    return (
+                        year in this.todos &&
+                            month in this.todos[year] &&
+                            date in this.todos[year][month]
+                            ? this.todos[year][month][date] : []
+                    )
+                },
+                // 數字補零
+                padLeft: function (str, len) {
+                    str = '' + str;
+                    return str.length >= len ? str : new Array(len - str.length + 1).join("0") + str;
+                },
+            },
+            computed: {
+                calendarFirstDay() {
+                    const mDate = new Date(this.calendar.year, this.calendar.month, 1);
+                    const date = new Date(this.calendar.year, this.calendar.month, 1 - mDate.getDay());
+                    return {
+                        year: date.getFullYear(),
+                        month: date.getMonth(),
+                        date: date.getDate(),
+                        day: date.getDay()
+                    }
+                },
+                calendarMonth() {
+                    const data = []
+                    let date
+                    for (let i = 0; i < 42; i++) {
+                        date = new Date(this.calendarFirstDay.year, this.calendarFirstDay.month, this.calendarFirstDay.date + i);
+                        let d = {
+                            year: date.getFullYear(),
+                            month: date.getMonth(),
+                            date: date.getDate(),
+                            day: date.getDay()
+                        }
+                        d.count = this.getTodos(d).length;
+                        d.todos = this.getTodos(d);
+                        // d.todos = this.getTodos(d);
+                        data.push(d)
+                    }
+                    return data
+                },
+                currentMonth() {
+                    return this.calendarMonth.filter(date => {
+                        return date.month == this.calendar.month && date.count;
+                    })
+                }
+            },
+        })
+
+    </script>
+</body>
+
+</html>
